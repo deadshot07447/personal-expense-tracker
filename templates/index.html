@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Expense Tracker</title>
+    <!-- We link our custom stylesheet here. -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        
+        <header class="header">
+            <h1>Personal Expense Tracker</h1>
+            <div id="status-message" class="hidden"></div>
+        </header>
+
+        <!-- Top summary section -->
+        <section class="summary-cards">
+            <div class="card">
+                <h3>Total Spend</h3>
+                <p id="total-spend" class="amount loading">...</p>
+            </div>
+            <div class="card">
+                <h3>This Month</h3>
+                <p id="monthly-spend" class="amount loading">...</p>
+            </div>
+            <div class="card">
+                <h3>This Year</h3>
+                <p id="yearly-spend" class="amount loading">...</p>
+            </div>
+        </section>
+
+        <!-- Main content grid -->
+        <main class="main-content">
+            
+            <!-- Left Column: Add Expense Form -->
+            <section class="form-section card">
+                <h2>Add Expense</h2>
+                <form id="expense-form">
+                    
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" name="category" required>
+                            <option value="" disabled selected>Select a category...</option>
+                            <!-- Options will be populated by JS -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="amount">Amount</label>
+                        <div class="input-prefix">
+                            <span>₹</span>
+                            <input type="number" id="amount" name="amount" min="0.01" step="0.01" placeholder="500" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="note">Note (Optional)</label>
+                        <input type="text" id="note" name="note" placeholder="e.g. Lunch with friends">
+                    </div>
+
+                    <button type="submit" id="submit-btn" class="btn-primary">Add Expense</button>
+                </form>
+            </section>
+
+            <!-- Right Column: Category Wise Spending -->
+            <section class="category-section card">
+                <h2>Category Wise</h2>
+                <div id="category-list" class="list-container">
+                    <div class="loading-state">Loading categories...</div>
+                    <!-- Filled by JS -->
+                </div>
+            </section>
+        </main>
+
+        <!-- Bottom Section: Monthly Trend & Recent -->
+        <section class="bottom-content">
+            <!-- Monthly trend bars -->
+            <div class="trend-section card">
+                <h2>Monthly Spending</h2>
+                <div id="monthly-trend" class="trend-container">
+                    <div class="loading-state">Loading trend...</div>
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+
+            <!-- Recent Expenses List -->
+            <div class="recent-section card">
+                <h2>Recent Expenses</h2>
+                <div id="recent-expenses" class="list-container">
+                    <div class="loading-state">Loading recent expenses...</div>
+                     <!-- Filled by JS -->
+                </div>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Main JavaScript file handling the SPA logic -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
