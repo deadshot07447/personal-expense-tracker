@@ -359,35 +359,110 @@ SELECT * FROM EXPENSES;
 
 ---
 
-## 2. Backend Setup (Flask)
+## 2. Project Setup (Backend & Frontend)
 
-1. **Clone the Repository & Navigate to Folder**:
-   ```bash
-   git clone <repo-url>
-   cd personal-expense-tracker
-   ```
+To ensure that Git authorship and commit history belong entirely to you (without retaining previous contributor details from a cloned repository), follow this manual file-creation setup:
 
-2. **Install Python Dependencies**:
-   Ensure Python 3.8+ is installed, then run:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### 2.1 Create Project Directory Structure
+Open your terminal (PowerShell, Command Prompt, or Bash) and create the project folders:
 
-3. **Configure Database Connection**:
-   - Create a `.env` file in the project root (or copy `.env.example` to `.env`):
-     ```ini
-     DB_USER=system
-     DB_PASSWORD=your_password
-     DB_DSN=localhost/XE
+```bash
+mkdir personal-expense-tracker
+cd personal-expense-tracker
+
+# Create subdirectories for backend, frontend, and database
+mkdir database
+mkdir routes
+mkdir templates
+mkdir static
+mkdir static/css
+mkdir static/js
+```
+
+### 2.2 Create Project Files & Paste Contents
+Create each file inside its corresponding folder and copy-paste the respective code from this repository:
+
+1. **Root Directory (`personal-expense-tracker/`)**:
+   - `requirements.txt` — Paste required Python dependencies:
+     ```text
+     Flask==3.0.0
+     oracledb
+     python-dotenv==1.0.0
      ```
-   - Alternatively, update the fallback credentials in `config.py`.
+   - `config.py` — Database configuration loader using `python-dotenv`.
+   - `.env` — Local environment file with your database credentials.
+   - `.gitignore` — Ignore virtual environments (`venv/`), cache (`__pycache__/`), and `.env`.
+   - `app.py` — Main Flask application entry point.
 
-4. **Run the Application**:
-   Start the Flask development server:
-   ```bash
-   python app.py
-   ```
-   Open your browser and navigate to:
-   ```text
-   http://localhost:5000
-   ```
+2. **Database Layer (`database/`)**:
+   - `database/connection.py` — Oracle connection pool initialization and connection getter.
+
+3. **Backend API Routes (`routes/`)**:
+   - `routes/category_routes.py` — Blueprint for category endpoints (`/api/categories`).
+   - `routes/expense_routes.py` — Blueprint for expense CRUD and dashboard stats endpoints.
+
+4. **Frontend HTML Template (`templates/`)**:
+   - `templates/index.html` — Single Page Application structure with form, summary cards, and lists.
+
+5. **Frontend Static Assets (`static/`)**:
+   - `static/css/style.css` — CSS styling, layout, responsive cards, and progress bars.
+   - `static/js/app.js` — Client-side JavaScript handling dynamic DOM updates and API calls.
+
+---
+
+### 2.3 Initialize Your Own Git Repository
+To track your project with your own name and email as the author:
+
+```bash
+git init
+git config user.name "Your Name"
+git config user.email "your.email@example.com"
+git add .
+git commit -m "Initial commit: Personal Expense Tracker"
+```
+
+---
+
+### 2.4 Virtual Environment & Dependency Installation
+Create an isolated Python environment and install the required packages:
+
+```bash
+# 1. Create and activate a virtual environment
+# Windows:
+python -m venv venv
+venv\Scripts\activate
+
+# macOS / Linux:
+python3 -m venv venv
+source venv/bin/activate
+
+# 2. Install dependencies
+pip install -r requirements.txt
+```
+
+---
+
+### 2.5 Configure Database Connection
+Create a `.env` file in the root folder of your project and configure your local Oracle credentials:
+
+```ini
+DB_USER=system
+DB_PASSWORD=your_oracle_password
+DB_DSN=localhost/XE
+```
+*(Note: If you are using an Oracle Pluggable Database, change `DB_DSN` to `localhost/XEPDB1` or your specific service name).*
+
+---
+
+### 2.6 Run the Application
+Start the Flask development server:
+
+```bash
+python app.py
+```
+
+Open your browser and navigate to:
+```text
+http://localhost:5000
+```
+Your Personal Expense Tracker is now running locally under your own environment!
