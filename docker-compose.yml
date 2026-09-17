@@ -1,0 +1,50 @@
+services:
+  # MySQL 8.0 Database Service
+  db:
+    image: mysql:8.0
+    container_name: expense_tracker_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: expense_tracker
+      MYSQL_USER: tracker_user
+      MYSQL_PASSWORD: tracker_pass
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./database/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - expense_net
+
+  # Flask + Gunicorn Web Application Service
+  web:
+    build: .
+    container_name: expense_tracker_web
+    restart: always
+    ports:
+      - "80:80"
+    environment:
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: tracker_user
+      DB_PASSWORD: tracker_pass
+      DB_NAME: expense_tracker
+      SECRET_KEY: super_secret_production_key_change_me
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - expense_net
+
+volumes:
+  db_data:
+
+networks:
+  expense_net:
+    driver: bridge
