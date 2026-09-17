@@ -44,7 +44,9 @@ CREATE TABLE IF NOT EXISTS expenses (
     note VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_expense_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    CONSTRAINT fk_expense_category FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE RESTRICT
+    CONSTRAINT fk_expense_category FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE RESTRICT,
+    INDEX idx_expense_user_date (user_id, expense_date),
+    INDEX idx_expense_category (category_id)
 ) ENGINE=InnoDB;
 
 -- 4. BUDGETS Table
@@ -60,7 +62,3 @@ CREATE TABLE IF NOT EXISTS budgets (
     CONSTRAINT fk_budget_user FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     CONSTRAINT fk_budget_category FOREIGN KEY (category_id) REFERENCES categories(category_id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
-
--- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_expense_user_date ON expenses (user_id, expense_date);
-CREATE INDEX IF NOT EXISTS idx_expense_category ON expenses (category_id);
