@@ -1,104 +1,661 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
     <title>Personal Expense Tracker</title>
-    <!-- We link our custom stylesheet here. -->
+    <meta name="description" content="A minimal full-stack Personal Expense Tracker with expenditure limits, weekly comparisons, interactive pie charts, expense calendar, and category management.">
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Bootstrap 5.3.3 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons 1.11.3 (Vector SVG font, zero emojis) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <!-- Design Constants & Custom Slim CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="container">
+<body data-bs-theme="light">
+    
+    <!-- Global Toast Notification -->
+    <div id="status-toast" class="toast-message hidden" role="alert"></div>
+
+    <!-- 1. SIGN IN SCREEN (Visible first when not authenticated) -->
+    <div id="auth-screen" class="auth-screen-wrapper d-flex align-items-center justify-content-center min-vh-100 p-3">
+        <div class="card border shadow-sm p-4" style="max-width: 420px; width: 100%; border-radius: 12px;">
+            <div class="text-center mb-4">
+                <div class="d-inline-flex align-items-center justify-content-center bg-primary text-white rounded-3 mb-2" style="width: 48px; height: 48px;">
+                    <i class="bi bi-wallet2 fs-4"></i>
+                </div>
+                <h4 class="fw-bold mb-1">Expense Tracker</h4>
+                <p class="text-muted small mb-0">Sign in to view and manage your expenses</p>
+            </div>
+
+            <!-- Mode Toggle: Sign In / Create Account -->
+            <div class="btn-group w-100 mb-3" role="group">
+                <button type="button" id="auth-tab-signin" class="btn btn-outline-primary active">Sign In</button>
+                <button type="button" id="auth-tab-signup" class="btn btn-outline-primary">Create Account</button>
+            </div>
+
+            <!-- Sign In Form -->
+            <form id="screen-login-form">
+                <div class="mb-3">
+                    <label for="screen-login-user" class="form-label small fw-semibold text-secondary">Username or Email</label>
+                    <input type="text" id="screen-login-user" class="form-control" placeholder="username" required>
+                </div>
+                <div class="mb-3">
+                    <label for="screen-login-pass" class="form-label small fw-semibold text-secondary">Password</label>
+                    <input type="password" id="screen-login-pass" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" id="screen-btn-signin" class="btn btn-primary w-100 py-2 fw-semibold" disabled>Sign In</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="screen-register-form" class="hidden">
+                <div class="mb-3">
+                    <label for="screen-reg-user" class="form-label small fw-semibold text-secondary">Username</label>
+                    <input type="text" id="screen-reg-user" class="form-control" placeholder="Choose username" minlength="3" required>
+                </div>
+                <div class="mb-3">
+                    <label for="screen-reg-email" class="form-label small fw-semibold text-secondary">Email Address</label>
+                    <input type="email" id="screen-reg-email" class="form-control" placeholder="user@example.com" required>
+                </div>
+                <div class="mb-3">
+                    <label for="screen-reg-pass" class="form-label small fw-semibold text-secondary">Password</label>
+                    <input type="password" id="screen-reg-pass" class="form-control" placeholder="Minimum 4 characters" minlength="4" required>
+                </div>
+                <button type="submit" id="screen-btn-signup" class="btn btn-primary w-100 py-2 fw-semibold" disabled>Create Account</button>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- 2. MAIN APPLICATION VIEW (Visible only after sign in) -->
+    <div id="app-view" class="app-layout hidden">
         
-        <header class="header">
-            <h1>Personal Expense Tracker</h1>
-            <div id="status-message" class="hidden"></div>
-        </header>
-
-        <!-- Top summary section -->
-        <section class="summary-cards">
-            <div class="card">
-                <h3>Total Spend</h3>
-                <p id="total-spend" class="amount loading">...</p>
-            </div>
-            <div class="card">
-                <h3>This Month</h3>
-                <p id="monthly-spend" class="amount loading">...</p>
-            </div>
-            <div class="card">
-                <h3>This Year</h3>
-                <p id="yearly-spend" class="amount loading">...</p>
-            </div>
-        </section>
-
-        <!-- Main content grid -->
-        <main class="main-content">
-            
-            <!-- Left Column: Add Expense Form -->
-            <section class="form-section card">
-                <h2>Add Expense</h2>
-                <form id="expense-form">
-                    
-                    <div class="form-group">
-                        <label for="category">Category</label>
-                        <select id="category" name="category" required>
-                            <option value="" disabled selected>Select a category...</option>
-                            <!-- Options will be populated by JS -->
-                        </select>
+        <!-- SIDE PANE NAVIGATION -->
+        <aside class="side-pane">
+            <div class="side-header">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="bg-primary text-white d-flex align-items-center justify-content-center rounded-2" style="width: 32px; height: 32px;">
+                        <i class="bi bi-wallet2 fs-6"></i>
                     </div>
+                    <span class="fw-bold text-dark fs-6">ExpenseTracker</span>
+                </div>
+            </div>
 
-                    <div class="form-group">
-                        <label for="amount">Amount</label>
-                        <div class="input-prefix">
-                            <span>₹</span>
-                            <input type="number" id="amount" name="amount" min="0.01" step="0.01" placeholder="500" required>
+            <!-- Navigation Links in Side Pane -->
+            <nav class="side-nav" role="tablist">
+                <button class="nav-item active" data-tab="dashboard-tab" id="tab-btn-dashboard">
+                    <i class="bi bi-speedometer2 fs-6"></i>
+                    <span>Dashboard</span>
+                </button>
+
+                <button class="nav-item" data-tab="weekly-tab" id="tab-btn-weekly">
+                    <i class="bi bi-bar-chart fs-6"></i>
+                    <span>Weekly Compare</span>
+                </button>
+
+                <button class="nav-item" data-tab="pie-tab" id="tab-btn-pie">
+                    <i class="bi bi-pie-chart fs-6"></i>
+                    <span>Category Pie</span>
+                </button>
+
+                <button class="nav-item" data-tab="calendar-tab" id="tab-btn-calendar">
+                    <i class="bi bi-calendar3 fs-6"></i>
+                    <span>Expense Calendar</span>
+                </button>
+
+                <button class="nav-item d-flex justify-content-between align-items-center" data-tab="budgets-tab" id="tab-btn-budgets">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-shield-exclamation fs-6"></i>
+                        <span>Budgets & Limits</span>
+                    </div>
+                    <span id="nav-alert-badge" class="badge bg-danger rounded-pill hidden">0</span>
+                </button>
+
+                <button class="nav-item" data-tab="categories-tab" id="tab-btn-categories">
+                    <i class="bi bi-tags fs-6"></i>
+                    <span>Categories</span>
+                </button>
+            </nav>
+
+            <!-- Bottom User Profile in Side Pane -->
+            <div class="side-footer">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 34px; height: 34px;" id="nav-avatar">U</div>
+                        <div>
+                            <div class="fw-semibold small text-dark" id="nav-username">user</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Active Account</div>
+                        </div>
+                    </div>
+                    <button id="logout-btn" class="btn btn-sm btn-outline-danger border-0" title="Sign Out">
+                        <i class="bi bi-box-arrow-right fs-5"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+
+        <!-- MAIN CONTENT WRAPPER -->
+        <div class="main-wrapper">
+            
+            <!-- Top Bar -->
+            <header class="top-bar">
+                <h1 id="page-title" class="h5 mb-0 fw-bold text-dark">Dashboard</h1>
+                <span class="badge bg-light text-secondary border px-3 py-2 fw-normal">Connected to MySQL</span>
+            </header>
+
+            <!-- Global Budget Warning Banners -->
+            <div id="global-alerts-container" class="px-4 pt-3"></div>
+
+            <!-- Content Body -->
+            <main class="content-body p-4">
+
+                <!-- 1. DASHBOARD TAB -->
+                <div id="dashboard-tab" class="tab-content active">
+                    
+                    <!-- Top Summary Stats Cards -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card border shadow-sm p-3 h-100">
+                                <span class="text-muted small fw-semibold">Total Spend</span>
+                                <h3 id="total-spend" class="fw-bold my-2 text-dark">₹0</h3>
+                                <span class="text-secondary small">Lifetime total</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card border shadow-sm p-3 h-100">
+                                <span class="text-muted small fw-semibold">This Month</span>
+                                <h3 id="monthly-spend" class="fw-bold my-2 text-dark">₹0</h3>
+                                <div id="monthly-budget-progress-mini" class="progress my-2" style="height: 6px;">
+                                    <div id="monthly-budget-fill-mini" class="progress-bar bg-primary" style="width: 0%"></div>
+                                </div>
+                                <span id="monthly-budget-hint" class="text-secondary small">Budget: Not set</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4">
+                            <div class="card border shadow-sm p-3 h-100">
+                                <span class="text-muted small fw-semibold">This Year</span>
+                                <h3 id="yearly-spend" class="fw-bold my-2 text-dark">₹0</h3>
+                                <span class="text-secondary small">Year to date</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="note">Note (Optional)</label>
-                        <input type="text" id="note" name="note" placeholder="e.g. Lunch with friends">
+                    <!-- Add Expense & Category Spend -->
+                    <div class="row g-4 mb-4">
+                        <!-- Add Expense Form -->
+                        <div class="col-lg-5">
+                            <div class="card border shadow-sm h-100">
+                                <div class="card-header bg-white py-3 border-bottom">
+                                    <h6 class="mb-0 fw-bold text-dark">Add Expense</h6>
+                                </div>
+                                <div class="card-body">
+                                    <form id="expense-form">
+                                        <div class="mb-3">
+                                            <label for="category" class="form-label small fw-semibold">Category</label>
+                                            <div class="input-group">
+                                                <select id="category" name="category" class="form-select" required>
+                                                    <option value="" disabled selected>Select a category...</option>
+                                                </select>
+                                                <button type="button" id="btn-quick-add-cat" class="btn btn-outline-secondary" title="New Category">+</button>
+                                            </div>
+                                        </div>
+
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6">
+                                                <label for="amount" class="form-label small fw-semibold">Amount (₹)</label>
+                                                <input type="number" id="amount" name="amount" class="form-control" min="0.01" step="any" placeholder="0.00" required>
+                                            </div>
+                                            <div class="col-6">
+                                                <label for="expense-date" class="form-label small fw-semibold">Date</label>
+                                                <input type="date" id="expense-date" name="expense_date" class="form-control">
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <label for="note" class="form-label small fw-semibold">Description</label>
+                                            <input type="text" id="note" name="note" class="form-control" placeholder="Expense note (optional)">
+                                        </div>
+
+                                        <button type="submit" id="submit-expense-btn" class="btn btn-primary w-100 py-2 fw-semibold" disabled>Save Expense</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category Breakdown -->
+                        <div class="col-lg-7">
+                            <div class="card border shadow-sm h-100">
+                                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 fw-bold text-dark">Category Spending</h6>
+                                    <button id="view-pie-shortcut" class="btn btn-link btn-sm text-decoration-none p-0">View Pie Chart &rarr;</button>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div id="category-list" class="items-list p-3">
+                                        <div class="text-muted small text-center py-3">Loading categories...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <button type="submit" id="submit-btn" class="btn-primary">Add Expense</button>
-                </form>
-            </section>
+                    <!-- Monthly Trend & Recent Transactions -->
+                    <div class="row g-4">
+                        <div class="col-lg-6">
+                            <div class="card border shadow-sm h-100">
+                                <div class="card-header bg-white py-3 border-bottom">
+                                    <h6 class="mb-0 fw-bold text-dark">Monthly Spending Trend</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="monthly-trend" class="trend-list">
+                                        <div class="text-muted small text-center py-3">Loading trend...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-            <!-- Right Column: Category Wise Spending -->
-            <section class="category-section card">
-                <h2>Category Wise</h2>
-                <div id="category-list" class="list-container">
-                    <div class="loading-state">Loading categories...</div>
-                    <!-- Filled by JS -->
+                        <div class="col-lg-6">
+                            <div class="card border shadow-sm h-100">
+                                <div class="card-header bg-white py-3 border-bottom">
+                                    <h6 class="mb-0 fw-bold text-dark">Recent Expenses</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div id="recent-expenses" class="items-list p-3">
+                                        <div class="text-muted small text-center py-3">Loading recent expenses...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-            </section>
-        </main>
 
-        <!-- Bottom Section: Monthly Trend & Recent -->
-        <section class="bottom-content">
-            <!-- Monthly trend bars -->
-            <div class="trend-section card">
-                <h2>Monthly Spending</h2>
-                <div id="monthly-trend" class="trend-container">
-                    <div class="loading-state">Loading trend...</div>
-                    <!-- Filled by JS -->
+
+                <!-- 2. WEEKLY COMPARE TAB -->
+                <div id="weekly-tab" class="tab-content">
+                    <div class="card border shadow-sm mb-4">
+                        <div class="card-header bg-white py-3 border-bottom">
+                            <h6 class="mb-0 fw-bold text-dark">Weekly Comparison</h6>
+                            <p class="text-muted small mb-0">Compare spending patterns between any two weeks</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <label for="week1-input" class="small fw-semibold text-secondary mb-0">Week A:</label>
+                                    <input type="week" id="week1-input" class="form-control form-control-sm" style="width: 170px;">
+                                </div>
+                                <span class="text-muted fw-bold">vs</span>
+                                <div class="d-flex align-items-center gap-2">
+                                    <label for="week2-input" class="small fw-semibold text-secondary mb-0">Week B:</label>
+                                    <input type="week" id="week2-input" class="form-control form-control-sm" style="width: 170px;">
+                                </div>
+                                <button id="btn-run-comparison" class="btn btn-primary btn-sm px-3">Compare</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Summary KPI Numbers -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="card border shadow-sm p-3">
+                                <span class="text-muted small fw-semibold" id="kpi-w1-label">Week A Total</span>
+                                <h4 class="fw-bold my-1 text-dark" id="kpi-w1-total">₹0</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border shadow-sm p-3">
+                                <span class="text-muted small fw-semibold" id="kpi-w2-label">Week B Total</span>
+                                <h4 class="fw-bold my-1 text-dark" id="kpi-w2-total">₹0</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border shadow-sm p-3">
+                                <span class="text-muted small fw-semibold">Net Difference</span>
+                                <div class="d-flex align-items-center gap-2 my-1">
+                                    <h4 class="fw-bold mb-0 text-dark" id="kpi-net-diff">₹0</h4>
+                                    <span class="badge bg-light text-dark border" id="kpi-diff-badge">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comparison Charts -->
+                    <div class="row g-4">
+                        <div class="col-lg-7">
+                            <div class="card border shadow-sm">
+                                <div class="card-header bg-white py-3 border-bottom">
+                                    <h6 class="mb-0 fw-bold text-dark">Day-by-Day (Mon - Sun)</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div style="position: relative; height: 320px;">
+                                        <canvas id="weeklyComparisonChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-5">
+                            <div class="card border shadow-sm">
+                                <div class="card-header bg-white py-3 border-bottom">
+                                    <h6 class="mb-0 fw-bold text-dark">Category Shift</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle mb-0" id="weekly-category-table">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="small fw-semibold">Category</th>
+                                                    <th class="small fw-semibold">Week A</th>
+                                                    <th class="small fw-semibold">Week B</th>
+                                                    <th class="small fw-semibold">Difference</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="weekly-category-tbody">
+                                                <tr><td colspan="4" class="text-center text-muted small py-3">Loading comparison...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Recent Expenses List -->
-            <div class="recent-section card">
-                <h2>Recent Expenses</h2>
-                <div id="recent-expenses" class="list-container">
-                    <div class="loading-state">Loading recent expenses...</div>
-                     <!-- Filled by JS -->
+
+                <!-- 3. CATEGORY PIE TAB -->
+                <div id="pie-tab" class="tab-content">
+                    <div class="card border shadow-sm mb-4">
+                        <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <h6 class="mb-0 fw-bold text-dark">Category Distribution</h6>
+                                <p class="text-muted small mb-0">Visual breakdown of spending by category</p>
+                            </div>
+                            <div class="btn-group btn-group-sm pie-period-toggles">
+                                <button class="btn btn-outline-primary btn-period active" data-period="monthly">Monthly</button>
+                                <button class="btn btn-outline-primary btn-period" data-period="weekly">Weekly</button>
+                                <button class="btn btn-outline-primary btn-period" data-period="daily">Daily</button>
+                                <button class="btn btn-outline-primary btn-period" data-period="custom">Custom</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex flex-wrap align-items-center gap-3">
+                                <div id="control-monthly" class="period-control-group d-flex align-items-center gap-2">
+                                    <label for="pie-month-picker" class="small fw-semibold text-secondary mb-0">Month:</label>
+                                    <input type="month" id="pie-month-picker" class="form-control form-control-sm" style="width: 170px;">
+                                </div>
+                                <div id="control-weekly" class="period-control-group hidden d-flex align-items-center gap-2">
+                                    <label for="pie-week-picker" class="small fw-semibold text-secondary mb-0">Week:</label>
+                                    <input type="week" id="pie-week-picker" class="form-control form-control-sm" style="width: 170px;">
+                                </div>
+                                <div id="control-daily" class="period-control-group hidden d-flex align-items-center gap-2">
+                                    <label for="pie-date-picker" class="small fw-semibold text-secondary mb-0">Date:</label>
+                                    <input type="date" id="pie-date-picker" class="form-control form-control-sm" style="width: 170px;">
+                                </div>
+                                <div id="control-custom" class="period-control-group hidden d-flex align-items-center gap-2">
+                                    <div class="d-flex align-items-center gap-1">
+                                        <label for="pie-start-date" class="small fw-semibold text-secondary mb-0">From:</label>
+                                        <input type="date" id="pie-start-date" class="form-control form-control-sm" style="width: 140px;">
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1">
+                                        <label for="pie-end-date" class="small fw-semibold text-secondary mb-0">To:</label>
+                                        <input type="date" id="pie-end-date" class="form-control form-control-sm" style="width: 140px;">
+                                    </div>
+                                </div>
+                                <button id="btn-refresh-pie" class="btn btn-primary btn-sm px-3">Update Chart</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-lg-7">
+                            <div class="card border shadow-sm">
+                                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 fw-bold text-dark" id="pie-chart-period-title">Monthly Spending</h6>
+                                    <div>
+                                        <span class="text-muted small">Total: </span>
+                                        <strong id="pie-chart-total-spend" class="text-dark">₹0</strong>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div style="position: relative; height: 340px;">
+                                        <canvas id="categoryPieCanvas"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-5">
+                            <div class="card border shadow-sm">
+                                <div class="card-header bg-white py-3 border-bottom">
+                                    <h6 class="mb-0 fw-bold text-dark">Category Share Details</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div id="pie-breakdown-list" class="pie-share-list">
+                                        <div class="text-muted small text-center py-3">Loading category shares...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </section>
 
+
+                <!-- 4. CALENDAR TAB -->
+                <div id="calendar-tab" class="tab-content">
+                    <div class="card border shadow-sm mb-4">
+                        <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <h6 class="mb-0 fw-bold text-dark" id="calendar-month-year">September 2026</h6>
+                                <p class="text-muted small mb-0">Click on any date to inspect transactions or record expenses</p>
+                            </div>
+                            <div class="btn-group btn-group-sm">
+                                <button id="cal-prev-month" class="btn btn-outline-secondary">Previous</button>
+                                <button id="cal-current-month" class="btn btn-outline-secondary">Current Month</button>
+                                <button id="cal-next-month" class="btn btn-outline-secondary">Next</button>
+                            </div>
+                        </div>
+
+                        <div class="card-body p-3">
+                            <!-- Calendar Grid -->
+                            <div class="calendar-wrap">
+                                <div class="calendar-days-header">
+                                    <div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div>
+                                </div>
+                                <div id="calendar-days-grid" class="calendar-cells-grid"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- 5. BUDGETS & LIMITS TAB -->
+                <div id="budgets-tab" class="tab-content">
+                    <!-- Overall Monthly Budget -->
+                    <div class="card border shadow-sm mb-4">
+                        <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <h6 class="mb-0 fw-bold text-dark">Overall Monthly Budget Limit</h6>
+                                <p class="text-muted small mb-0">Warning alert triggers at 80% consumption</p>
+                            </div>
+                            <button id="btn-edit-overall-budget" class="btn btn-primary btn-sm px-3">Configure Monthly Limit</button>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="row g-3 mb-3">
+                                <div class="col-sm-3 col-6">
+                                    <span class="text-muted small fw-semibold d-block">Monthly Limit</span>
+                                    <span class="fs-5 fw-bold text-dark" id="overall-limit-amount">₹25,000</span>
+                                </div>
+                                <div class="col-sm-3 col-6">
+                                    <span class="text-muted small fw-semibold d-block">Spent This Month</span>
+                                    <span class="fs-5 fw-bold text-dark" id="overall-spent-amount">₹0</span>
+                                </div>
+                                <div class="col-sm-3 col-6">
+                                    <span class="text-muted small fw-semibold d-block">Remaining Balance</span>
+                                    <span class="fs-5 fw-bold text-dark" id="overall-remaining-amount">₹0</span>
+                                </div>
+                                <div class="col-sm-3 col-6">
+                                    <span class="text-muted small fw-semibold d-block">Consumption</span>
+                                    <span class="fs-5 fw-bold text-dark" id="overall-percentage">0%</span>
+                                </div>
+                            </div>
+
+                            <div class="progress" style="height: 10px;">
+                                <div id="overall-budget-fill" class="progress-bar bg-primary" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Category-Wise Budgets Grid -->
+                    <div class="card border shadow-sm">
+                        <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <h6 class="mb-0 fw-bold text-dark">Category Budget Limits</h6>
+                                <p class="text-muted small mb-0">Individual monthly limits per category</p>
+                            </div>
+                            <button id="btn-add-category-budget" class="btn btn-outline-primary btn-sm">+ Set Category Limit</button>
+                        </div>
+                        <div class="card-body">
+                            <div id="category-budgets-grid" class="category-budgets-grid">
+                                <div class="text-muted small text-center py-3">Loading budget limits...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- 6. CATEGORIES TAB -->
+                <div id="categories-tab" class="tab-content">
+                    <div class="card border shadow-sm">
+                        <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <h6 class="mb-0 fw-bold text-dark">Categories</h6>
+                                <p class="text-muted small mb-0">Manage system and custom categories</p>
+                            </div>
+                            <button id="btn-open-add-cat-modal" class="btn btn-primary btn-sm px-3">+ Add New Category</button>
+                        </div>
+                        <div class="card-body">
+                            <div id="categories-manager-grid" class="categories-manager-grid">
+                                <div class="text-muted small text-center py-3">Loading categories...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+
+        </div>
     </div>
 
-    <!-- Main JavaScript file handling the SPA logic -->
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- Add Category Modal -->
+    <div id="category-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0 fw-bold text-dark">Add Category</h6>
+                <button type="button" class="btn-close" id="close-category-modal" aria-label="Close"></button>
+            </div>
+            <form id="add-category-form">
+                <div class="mb-3">
+                    <label for="new-cat-name" class="form-label small fw-semibold">Category Name</label>
+                    <input type="text" id="new-cat-name" class="form-control" placeholder="e.g. Fitness, Education, Books" maxlength="50" required>
+                </div>
+                <div class="d-flex justify-content-end gap-2 pt-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="cancel-category-modal">Cancel</button>
+                    <button type="submit" id="btn-save-category" class="btn btn-primary btn-sm px-3" disabled>Save Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Configure Budget Modal -->
+    <div id="budget-modal" class="modal-backdrop hidden">
+        <div class="modal-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0 fw-bold text-dark" id="budget-modal-title">Configure Budget</h6>
+                <button type="button" class="btn-close" id="close-budget-modal" aria-label="Close"></button>
+            </div>
+            <form id="budget-form">
+                <div class="mb-3" id="budget-category-selector-group">
+                    <label for="budget-category-select" class="form-label small fw-semibold">Category</label>
+                    <select id="budget-category-select" class="form-select">
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="budget-amount-input" class="form-label small fw-semibold">Monthly Limit (₹)</label>
+                    <input type="number" id="budget-amount-input" class="form-control" min="1" step="any" placeholder="10000" required>
+                </div>
+                <div class="d-flex justify-content-end gap-2 pt-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="cancel-budget-modal">Cancel</button>
+                    <button type="submit" id="btn-save-budget" class="btn btn-primary btn-sm px-3" disabled>Save Budget</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Calendar Day Modal -->
+    <div id="calendar-day-modal" class="modal-backdrop hidden">
+        <div class="modal-card modal-lg">
+            <div class="d-flex justify-content-between align-items-start mb-3 border-bottom pb-2">
+                <div>
+                    <h6 class="mb-1 fw-bold text-dark" id="modal-day-title">Expenses on Date</h6>
+                    <span id="modal-day-total" class="text-primary small fw-semibold">Total: ₹0</span>
+                </div>
+                <button type="button" class="btn-close" id="close-calendar-modal" aria-label="Close"></button>
+            </div>
+
+            <div class="calendar-modal-split">
+                <div class="modal-split-col">
+                    <span class="small fw-semibold text-secondary d-block mb-2">Transactions</span>
+                    <div id="modal-day-items-list" class="items-list border rounded p-2" style="max-height: 280px; overflow-y: auto;">
+                        <div class="text-muted small text-center py-3">No transactions recorded.</div>
+                    </div>
+                </div>
+
+                <div class="modal-split-col">
+                    <span class="small fw-semibold text-secondary d-block mb-2">Add Expense on this Date</span>
+                    <form id="modal-day-expense-form">
+                        <div class="mb-2">
+                            <label for="modal-day-category" class="form-label small fw-semibold">Category</label>
+                            <select id="modal-day-category" class="form-select form-select-sm" required>
+                                <option value="" disabled selected>Select category...</option>
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label for="modal-day-amount" class="form-label small fw-semibold">Amount (₹)</label>
+                            <input type="number" id="modal-day-amount" class="form-control form-control-sm" min="0.01" step="any" placeholder="0.00" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="modal-day-note" class="form-label small fw-semibold">Description</label>
+                            <input type="text" id="modal-day-note" class="form-control form-control-sm" placeholder="Note">
+                        </div>
+                        <button type="submit" id="modal-day-submit-btn" class="btn btn-primary btn-sm w-100" disabled>Add Expense</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5.3.3 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Main JavaScript Application Logic -->
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>

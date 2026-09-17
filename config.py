@@ -5,13 +5,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class Config:
-    # Database Configuration
-    # Defaults set for a typical local Oracle XE installation
-    DB_USER = os.environ.get('DB_USER', 'system')
-    DB_PASSWORD = os.environ.get('DB_PASSWORD', 'password')
+    # MySQL Database Configuration
+    DB_HOST = os.environ.get('DB_HOST', 'localhost')
+    DB_PORT = int(os.environ.get('DB_PORT', 3306))
+    DB_USER = os.environ.get('DB_USER', 'root')
+    DB_PASSWORD = os.environ.get('DB_PASSWORD', 'root')
+    DB_NAME = os.environ.get('DB_NAME', 'expense_tracker')
     
-    # DSN (Data Source Name)
-    # Examples:
-    # 'localhost/XE' (for older XE versions)
-    # 'localhost/XEPDB1' (for 18c/19c/21c XE pluggable database)
-    DB_DSN = os.environ.get('DB_DSN', 'localhost/XE')
+    # Flask Session Secret Key
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'default_secret_key_please_change_in_production')
