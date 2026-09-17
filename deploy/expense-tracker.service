@@ -7,12 +7,12 @@ User=ubuntu
 Group=www-data
 WorkingDirectory=/home/ubuntu/personal-expense-tracker
 Environment="PATH=/home/ubuntu/personal-expense-tracker/venv/bin"
-ExecStart=/home/ubuntu/personal-expense-tracker/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 --access-logfile /var/log/expense-tracker-access.log --error-logfile /var/log/expense-tracker-error.log app:app
+ExecStart=/home/ubuntu/personal-expense-tracker/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:8000 --access-logfile - --error-logfile - app:app
 
 Restart=always
 RestartSec=5
-StandardOutput=syslog
-StandardError=syslog
+StandardOutput=journal
+StandardError=journal
 SyslogIdentifier=expense-tracker
 
 [Install]
