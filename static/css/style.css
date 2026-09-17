@@ -220,7 +220,7 @@ button:disabled, .btn:disabled {
 }
 
 /* Delta Badges & KPI Badges */
-.delta-pill {
+.delta-pill, .kpi-badge {
     padding: 2px 8px;
     border-radius: var(--radius-md);
     font-size: 0.78rem;
@@ -234,6 +234,19 @@ button:disabled, .btn:disabled {
 .badge-red { background: var(--color-danger-bg); color: var(--color-danger); }
 .badge-yellow { background: var(--color-warning-bg); color: var(--color-warning); }
 .badge-green { background: var(--color-success-bg); color: var(--color-success); }
+
+.loading-state {
+    color: var(--text-muted);
+    font-size: 0.84rem;
+    text-align: center;
+    padding: 16px 0;
+}
+
+.flex-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
 
 /* Alert Banners */
 .alert-banner {

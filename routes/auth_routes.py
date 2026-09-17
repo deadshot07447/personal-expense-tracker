@@ -2,7 +2,6 @@ from flask import Blueprint, request, jsonify, session
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from database.connection import get_db_cursor
-import pymysql
 
 auth_bp = Blueprint('auth_bp', __name__)
 

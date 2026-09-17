@@ -1,7 +1,6 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify
 from database.connection import get_db_cursor
 from routes.auth_routes import get_current_user_id, login_required
-import pymysql
 
 category_bp = Blueprint('category_bp', __name__)
 

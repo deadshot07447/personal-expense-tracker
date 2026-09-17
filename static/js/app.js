@@ -214,15 +214,6 @@ function initAuthHandlers() {
         });
     }
 
-    // Handle Quick Demo Account Buttons
-    document.querySelectorAll('.btn-demo-user').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const username = btn.getAttribute('data-user');
-            const password = btn.getAttribute('data-pass');
-            await performLogin(username, password);
-        });
-    });
-
     // Handle sign out
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async () => {
@@ -345,13 +336,8 @@ async function loadDashboard() {
 
         if (res.ok) {
             document.getElementById('total-spend').textContent = formatCurrency(stats.total_spend);
-            document.getElementById('total-spend').classList.remove('loading');
-
             document.getElementById('monthly-spend').textContent = formatCurrency(stats.monthly_spend);
-            document.getElementById('monthly-spend').classList.remove('loading');
-
             document.getElementById('yearly-spend').textContent = formatCurrency(stats.yearly_spend);
-            document.getElementById('yearly-spend').classList.remove('loading');
 
             // Category-wise list
             const categoryList = document.getElementById('category-list');
@@ -581,11 +567,11 @@ async function loadBudgetsView() {
             
             const pctEl = document.getElementById('overall-percentage');
             pctEl.textContent = `${overall.percentage}%`;
-            pctEl.className = `stat-val badge-stat ${overall.status === 'danger' ? 'badge-red' : (overall.status === 'warning' ? 'badge-yellow' : '')}`;
+            pctEl.className = `fs-5 fw-bold ${overall.status === 'danger' ? 'text-danger' : (overall.status === 'warning' ? 'text-warning' : 'text-dark')}`;
 
             const fillBar = document.getElementById('overall-budget-fill');
             fillBar.style.width = `${Math.min(100, overall.percentage)}%`;
-            fillBar.className = `budget-progress-bar ${overall.status === 'danger' ? 'bar-danger' : (overall.status === 'warning' ? 'bar-warning' : '')}`;
+            fillBar.className = `progress-bar ${overall.status === 'danger' ? 'bg-danger' : (overall.status === 'warning' ? 'bg-warning' : 'bg-primary')}`;
 
             // Mini progress on dashboard
             if (miniFill) {
