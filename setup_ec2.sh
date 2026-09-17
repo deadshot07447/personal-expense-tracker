@@ -90,6 +90,8 @@ sudo systemctl restart expense-tracker
 
 # 7. Configure Nginx Reverse Proxy
 echo "--> [7/7] Configuring Nginx reverse proxy..."
+sudo chmod 755 /home/ubuntu
+sudo chmod -R 755 "${APP_DIR}/static"
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo cp "${APP_DIR}/deploy/nginx.conf" /etc/nginx/sites-available/expense-tracker
 sudo ln -sf /etc/nginx/sites-available/expense-tracker /etc/nginx/sites-enabled/expense-tracker
